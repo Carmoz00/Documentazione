@@ -83,4 +83,267 @@ Spring supporta anche queste due specifiche che lo sviluppatore può utilizzare 
 framework Spring:
 
 - **Dependency Injection (JSR 330)**
-- **ommon Annotations (JSR 250)**
+- **Common Annotations (JSR 250)**
+
+### COME FUNZIONA
+
+#### MODULI
+
+L’ecosistema Spring è costituito da tanti **moduli** , ognuno dei quali assolve a determinate funzioni.
+Un modulo Spring è semplicemente un **file JAR** che contiene una **serie di classi ed interface che definiscono
+ed implementano le funzionalità del modulo**.
+Per utilizzare una determinata funzione (ad esempio le interfacce di connessione ad DB), è sufficiente **importare
+nella nostra applicazione il modulo che la implementa**.
+
+<img width="720" height="540" alt="spring-overview" src="https://github.com/user-attachments/assets/8952b861-4803-4d5d-89ad-92c997ad0dd8" />
+
+- **spring-core**: È il **modulo principale che ogni applicazione Spring deve includere**.
+Il modulo **contiene tutte le classi condivise dagli altri moduli Spring** (ad es. le classi per accedere ai file di
+configurazione). Il modulo contiene anche una **serie di classi di utility utilizzate nei moduli Spring** e che possiamo utilizzare anche nella tua applicazione (ad es. la classe NumberUtils che tra le altre cose consente di fare il parsing di
+una string in un numero mediante il metodo statico parseNumber String text, Class<T> targetClass)).
+
+- **spring-oap**: Questo modulo contiene le **classi necessarie per utilizzare le funzionalità AOP di Spring** (modularizzare le preoccupazioni trasversali (come la registrazione, la sicurezza, le transazioni) separandole dal codice dell'applicazione principale).
+Questo modulo va importato anche se è necessario utilizzare altre funzionalità in Spring che utilizzano AOP (ad esempio il modulo per la gestione delle transizioni).
+
+- **spring-beans**: Questo modulo contiene le classi per gestire i bean Spring.
+
+- **spring-context**: Il modulo contiene le classi che forniscono molte estensioni al modulo core. Ad esempio, tutte le classi utilizzano la funzionalità ApplicationContext di Spring. Il modulo contiene anche le classi per l'integrazione Enterprise JavaBeans (EJB), Java Naming and Directory Interface (JNDI) e Java Management Extensions (JMX).
+
+- **spring-jdbc**: Il modulo contiene leclassi per il supporto JDBC ed è necessario per le applicazioni che richiedono l'accesso al database.
+
+- **spring-orm**: Il modulo estende le funzionalità del modulo spring jdbc implementando il supporto ai pi ù diffusi strumenti ORM Hibernate , JDO, JPA e iBATIS). Questo modulo utilizza molte classi implementate nel modulo spring jdbc.
+
+- **spring-web**: Il modulo contiene le classi principali per l'utilizzo di Spring nelle applicazioni Web, tra cui le classi per gestire l’upload di file, elaborare la query string , ecc
+
+- **spring-webflux**: Questo modulo contiene le classi da necessarie per implementare applicazioni web con Spring Web Reactive.
+
+- **spring-webmvc**: Il modulo contiene le classi per utilizzare il framework MVC di Spring.
+
+### DEPENDENCY (DIPENDENZE)
+
+Nel contesto di Spring, una `dipendenza` è **un oggetto (o "bean") di cui un altro oggetto ha bisogno per svolgere le proprie funzionalità**.
+
+```java
+// La "dipendenza": l'oggetto di cui Lettore ha bisogno
+class File {
+    String getContent() {
+        return "Contenuto del file.";
+    }
+}
+
+// L'oggetto che ha la dipendenza
+class Lettore {
+    private File file; // <--- Il "File" è la dipendenza del "Lettore"
+
+    public Lettore() {
+        this.file = new File(); // Il Lettore crea e gestisce la sua dipendenza
+    }
+
+    public void leggi() {
+        System.out.println(file.getContent());
+    }
+
+    public static void main(String[] args) {
+        Lettore lettore = new Lettore();
+        lettore.leggi(); // Output: Contenuto del file.
+    }
+}
+```
+
+In questo esempio, la classe `Lettore` dipende dalla classe `File` per poter eseguire il suo compito di lettura. Senza un `File`, il `Lettore` non può funzionare.
+
+### INVERTION OF CONTROL (IoC)
+
+L'Inversion of Control (IoC) in Spring è un principio di progettazione fondamentale che ribalta il modo tradizionale in cui gli oggetti gestiscono le proprie dipendenze, **trasferendo il controllo di oggetti o porzioni di programma al conteiner o al framework**.
+
+In particolare, invece che un oggetto **crei direttamente le sue dipendenze** (cioè gli altri oggetti o servizi di cui ha bisogno), è **il container IoC di Spring a farsi carico di questo compito**. Il container si occupa di **instanziare gli oggetti, configurarli e iniettare le dipendenze necessarie**, liberando l'oggetto dalla responsabilità di cercarle o crearle autonomamente. Questo porta a un **disaccoppiamento maggiore tra le classi**, rendendole **più modulari, riutilizzabili e facili da testare**. 
+
+
+L'invertion of Control può essere ottenuta utilizzando vari design pattern:
+- **Service Locator pattern**
+- **Factory pattern**
+- **Dependency Injection pattern (DI)**
+
+Il modo più comune in cui Spring implementa l'IoC è tramite la Dependency Injection (DI).
+
+
+- **Programmazione Tradizionale (Senza IoC/DI)**
+
+```java
+// Interfaccia del motore di stampa
+interface PrinterEngine {
+    void print(String document);
+}
+
+// Implementazione concreta del motore di stampa laser
+class LaserPrinterEngine implements PrinterEngine {
+    @Override
+    public void print(String document) {
+        System.out.println("Stampa LASER del documento: '" + document + "'");
+    }
+}
+
+// Classe che stampa documenti - Tradizionale
+class DocumentPrinterTraditional {
+    private PrinterEngine engine; // La dipendenza
+
+    public DocumentPrinterTraditional() {
+        // Il controllo della creazione dell'oggetto è QUI, all'interno della classe
+        this.engine = new LaserPrinterEngine(); // Accoppiamento forte!
+    }
+
+    public void printDocument(String document) {
+        engine.print(document);
+    }
+
+    public static void main(String[] args) {
+        DocumentPrinterTraditional printer = new DocumentPrinterTraditional();
+        printer.printDocument("Report Finanziario 2024");
+    }
+}
+```
+- **Inversion of Control (Tramite Spring e Dependency Injection)**
+
+```java
+// Uguale a prima
+interface PrinterEngine {
+  void print(String doc);
+}
+class LaserPrinterEngine implements PrinterEngine {
+    @Override
+    public void print(String doc) {
+      System.out.println("Stampa LASER (via IoC): " + doc);
+    }
+}
+class InkjetPrinterEngine implements PrinterEngine { // Una scelta alternativa
+    @Override
+    public void print(String doc) {
+      System.out.println("Stampa INKJET (via IoC): " + doc);
+    }
+}
+
+class DocumentPrinterIoC {
+    private PrinterEngine engine; // Solo dichiarazione della dipendenza
+
+    public DocumentPrinterIoC(PrinterEngine engine) {
+        this.engine = engine; // **Controllo invertito**: la dipendenza viene iniettata
+    }
+    public void printDocument(String doc) {
+      engine.print(doc);
+    }
+}
+
+@Configuration // Configurazione per Spring
+class SpringConfig {
+    @Bean // Spring userà questo metodo per creare l'istanza di PrinterEngine
+    public PrinterEngine getPrinterEngine() {
+        return new LaserPrinterEngine(); // Qui si decide quale implementazione usare
+        // return new InkjetPrinterEngine(); // Per cambiare, basta modificare questa riga!
+    }
+    @Bean
+    public DocumentPrinterIoC documentPrinter(PrinterEngine engine) { // Spring inietta il PrinterEngine
+        return new DocumentPrinterIoC(engine);
+    }
+    public static void main(String[] args) {
+        ApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+        DocumentPrinterIoC printer = context.getBean(DocumentPrinterIoC.class);
+        printer.printDocument("Report B");
+    }
+}
+```
+
+### Dependency Injection
+
+Il pattern Dependecy Injection è un design pattern utilizzato per implementare l'IoC. Esso **consente la creazione e l'associazione degli oggetti fuori dalla classe che li utilizza**. 
+
+Il pattern DI può essere implementato in tre modi:
+- **Constructor Injection**
+```java
+public class Biblioteca {
+    private BibliotecaService service;
+
+    // Questa è la Constructor Injection: la dipendenza 'service' viene fornita dall'esterno come argomento
+    public Biblioteca(BibliotecaService serv) {
+        super();
+        service = serv;
+    }
+
+    public List<Libro> getLibriDisponibili() {
+        return service.getLibriDisponibili();
+    }
+}
+
+public class BibliotecaFactory {
+    public static Biblioteca getBiblioteca() {
+        // Qui la factory crea la dipendenza (BibliotecaServiceImpl) e la inietta nel costruttore di Biblioteca
+        Biblioteca b = new Biblioteca(new BibliotecaServiceImpl());
+        return b;
+    }
+}
+
+public class Main {
+    public static void main (String[] args){
+        BibliotecaFactory.getBiblioteca().getLibriDisponibili();
+    }
+}
+```
+- **Setter Injection**
+```java
+public class Biblioteca {
+    private BibliotecaService service;
+
+    public Biblioteca() {
+        super();
+    }
+
+    // Questa è la Setter Injection: la dipendenza 'service' viene iniettata tramite un metodo setter pubblico.
+    public void setService(BibliotecaService service) {
+        this.service = service;
+    }
+
+    public List<Libro> getLibriDisponibili() {
+        return service.getLibriDisponibili();
+    }
+}
+
+public class BibliotecaFactory {
+    public static Biblioteca getBiblioteca() {
+        Biblioteca b = new Biblioteca();
+        b.setService(new BibliotecaServiceImpl());
+        return b;
+    }
+}
+
+public class Main {
+    public static void main (String[] args){
+        BibliotecaFactory.getBiblioteca().getLibriDisponibili();
+    }
+}
+```
+
+Esiste anche la **Interface Injection**, ma Spring implementa solo Constructor e Setter Injection.
+
+### IoC e DI in Spring
+
+I moduli che contengono le classi e le intefacce **necessarie per implementare l'IoC** in Spring sono:
+
+- **spring-beans**
+- **spring-core**
+
+La componente Spring che si occupa di creare istanze e configurare gli oggetti si chiama **IoC container**.
+
+Gli oggetti creati dall’IoC Container sono chiamati **beans** e sono configurati utilizzando metadati che possono essere file XML, Java annotations o codice Java. Il container si occupa di iniettare le dipendenze quando crea il bean.
+
+L’interfaccia BeanFactory mette a disposizione un meccanismo efficace di configurazione che consente di
+gestire oggetti Java di qualsiasi tipo. 
+
+Il modulo **spring-context**, basato sul modulo **spring-beans**, contiene sia l'interfaccia **BeanFactory** che l’interfaccia **ApplicationContext**, la quale eredita le funzionalità della BeanFactory e ne aggiunge altre.
+
+Poiché l’interfaccia ApplicationContext include tutte le funzionalità di BeanFactory, è consigliato utilizzare
+classi che implementano ApplicationContext.
+
+Possiamo quindi concludere che i moduli necessari per realizzare l’IoC in Spring e che non devono mai mancare in un progetto Spring sono:
+
+- **spring-beans**
+- **spring-core**
+- **spring-context**
